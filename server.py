@@ -69,8 +69,6 @@ def recvall(conn, length):
 def send_message(conn, addr):
     # figure out who I am
     me = addrTOuser[addr]
-    # this will hold the username I'm talking to
-    recipient = None
 
     while True:
         data = conn.recv(1024).decode().strip()
@@ -85,22 +83,22 @@ def send_message(conn, addr):
 
             if target in user_list and target != me:
                 # remember who I'm talking to
-                recipient = target
+                user_list[me].recipient = target
 
                 # exchange public keys
                 conn.send(user_list[target].publicKey.encode())          # tell me their key
                 user_list[target].conn.send(user_list[me].publicKey.encode())  # tell them my key
 
                 # store mapping so we know later who I meant
-                connectionList[recipient] = me
+                connectionList[user_list[me].recipient] = me
             else:
                 conn.send(b"No such user, or you tried to message yourself\n")
             continue
 
         # ---- once a NAME has been set, I can start sending encrypted messages ----
         if data.upper() == "MESSAGE" or data.upper() == "END CALL":
-            if recipient is None:
-                recipient = connectionList[addrTOuser[addr]]
+            if user_list[me].recipient is None:
+                user_list[me].recipient = connectionList[addrTOuser[addr]]
 
             try:
                 # read the nonce
@@ -117,7 +115,7 @@ def send_message(conn, addr):
                 tag = recvall(conn, 16)
 
                 # forward it
-                recipient_conn = user_list[recipient].conn
+                recipient_conn = user_list[user_list[me].recipient].conn
                 recipient_conn.sendall(nonce_len_bytes)
                 recipient_conn.sendall(nonce)
                 recipient_conn.sendall(ct_len_bytes)
@@ -130,6 +128,12 @@ def send_message(conn, addr):
                     conn.sendall(ct_len_bytes)
                     conn.sendall(ct)
                     conn.sendall(tag)
+                    if me in connectionList:
+                        del connectionList[me]
+                    if user_list[me].recipient in connectionList:
+                        del connectionList[user_list[me].recipient]
+                    user_list[user_list[me].recipient].recipient = None
+                    user_list[me].recipient = None
 
             except Exception as e:
                 print(f"[!] Error forwarding message: {e}")

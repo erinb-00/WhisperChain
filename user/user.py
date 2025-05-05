@@ -1,5 +1,5 @@
 class User:
-    __slots__ = ('username', 'password', 'mode', 'addr', 'conn', 'publicKey')
+    __slots__ = ('username', 'password', 'mode', 'addr', 'conn', 'publicKey', 'recipient')
     def __init__(self, username, password, mode, addr, conn, publicKey):
 
         self.username = username
@@ -8,3 +8,4 @@ class User:
         self.addr = addr
         self.conn = conn
         self.publicKey = publicKey
+        self.recipient = None
