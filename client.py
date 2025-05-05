@@ -45,7 +45,7 @@ def receive_messages(sock):
                 tag = recvall(sock, 16)
 
                 plaintext = aes_gcm_decrypt(shared_key, nonce, ct, tag)
-                if plaintext.decode() == "END":
+                if plaintext.decode() == "END CALL":
                     start_encryption_event.clear()
                     shared_key = None
                     continue
@@ -100,7 +100,10 @@ def main():
                 msg = input("Send> ")
 
                 if start_encryption_event.is_set():
-                    s.sendall(b"MESSAGE")
+                    if msg == "END CALL":
+                        s.sendall(b"END CALL")
+                    else:
+                        s.sendall(b"MESSAGE")
                     # Encrypt and decrypt
                     nonce, ct, tag = aes_gcm_encrypt(shared_key, msg.encode())
                     s.sendall(struct.pack('!H', len(nonce)))  # 2 bytes for nonce length
@@ -108,9 +111,6 @@ def main():
                     s.sendall(struct.pack('!I', len(ct)))     # 4 bytes for ciphertext length
                     s.sendall(ct)
                     s.sendall(tag)  # Tag is always 16 bytes so no need to send length
-                    if msg == "END":
-                        start_encryption_event.clear()
-                        shared_key = None
                     continue
 
                 if send_key_event.is_set():

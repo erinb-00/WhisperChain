@@ -98,7 +98,7 @@ def send_message(conn, addr):
             continue
 
         # ---- once a NAME has been set, I can start sending encrypted messages ----
-        if data.upper() == "MESSAGE":
+        if data.upper() == "MESSAGE" or data.upper() == "END CALL":
             if recipient is None:
                 recipient = connectionList[addrTOuser[addr]]
 
@@ -123,6 +123,14 @@ def send_message(conn, addr):
                 recipient_conn.sendall(ct_len_bytes)
                 recipient_conn.sendall(ct)
                 recipient_conn.sendall(tag)
+
+                if data.upper() == "END CALL":
+                    conn.sendall(nonce_len_bytes)
+                    conn.sendall(nonce)
+                    conn.sendall(ct_len_bytes)
+                    conn.sendall(ct)
+                    conn.sendall(tag)
+
             except Exception as e:
                 print(f"[!] Error forwarding message: {e}")
                 break
