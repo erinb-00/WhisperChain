@@ -3,6 +3,7 @@ import threading
 import sys
 from encryption import *
 import struct
+from crypto_utils import *
 
 HOST = '127.0.0.1'
 PORT = 34567
@@ -64,7 +65,7 @@ def receive_messages(sock):
                 print(f"\n[!] Received undecodable bytes during plaintext phase.")
                 continue
 
-            if text.strip().endswith("Mode") or text.strip() == "Error: Fill all fields" or text.strip() == "Error: Username already taken":
+            if text.strip().startswith("Username") or text.strip() == "Error: Fill all fields" or text.strip() == "Error: Username already taken" or text.strip() == "Error: Wrong Username or password":
                 send_key_event.set()
 
             elif shared_key is None and b"-----BEGIN PUBLIC KEY-----" in chunk:
@@ -88,6 +89,8 @@ def receive_messages(sock):
 
 def main():
     global shared_key
+    encrypt_key = create_key()
+    encrypt = False
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
         print(f"[+] Connected to {HOST}:{PORT}")
@@ -98,6 +101,15 @@ def main():
 
             try:
                 msg = input("Send> ")
+
+                if encrypt:
+                    encrypted = crypt_cred(msg, encrypt_key)   
+                    print(f"Encrypted: {encrypted}") 
+                    msg = encrypted
+                    encrypt = False               
+
+                if msg == "NAME":
+                    encrypt = True
 
                 if start_encryption_event.is_set():
                     if msg == "END CALL":
@@ -115,6 +127,9 @@ def main():
 
                 if send_key_event.is_set():
                     global pem
+                    prefix, rest = msg.split(':', 1)
+                    encrypted = crypt_cred(prefix.strip(), encrypt_key)
+                    msg = f"{encrypted}:{rest}"
                     msg = msg + ":" + pem.decode('utf-8')
                     send_key_event.clear()
 

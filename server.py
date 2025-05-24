@@ -2,6 +2,8 @@ import socket
 import threading
 from user.user import User
 import struct
+import json
+from auth import *
 
 HOST = '0.0.0.0'
 PORT = 34567
@@ -11,6 +13,8 @@ addrTOuser = {}
 connectionList = {}
 
 def sign(conn, addr):
+    with open("./storage.json", "r") as file:
+        userHistory = json.load(file)
     
     conn.send(b"1. Sign In\n2. Sign Up\n")
     data = conn.recv(1024).decode()
@@ -21,24 +25,50 @@ def sign(conn, addr):
 
     if data == "1":
         conn.send(b"Username\nPassword\n")
+        signIn(conn,addr, userHistory)
     else:
-        conn.send(b"Name\nUsername\nPassword\nMode\n")
-        signUp(conn, addr)
+        conn.send(b"Username\nPassword\nMode\n")
+        signUp(conn, addr, userHistory)
 
-def signUp(conn, addr):
+def signIn(conn, addr, userHistory):
 
     while True:
 
         data = conn.recv(1024).decode()
         array = data.split(":")
 
-        if len(array) == 4 and array[0] not in user_list:
+        if len(array) == 4 and array[0] not in userHistory:
             break
         if len(array) != 4:
             conn.send(b"Error: Fill all fields\n")
-        if array[0] in user_list:
+        if array[0] in userHistory:
+            if userHistory[array[0]][0] == array[1]:
+                break
+        
+        conn.send(b"Error: Wrong Username or password\n")
+
+    user_list[array[0]] = User(array[0], array[1], userHistory[array[0]][1], addr, conn, array[2])
+    addrTOuser[addr] = array[0]
+    print(f"New user: {array}")
+
+def signUp(conn, addr, userHistory):
+
+    while True:
+
+        data = conn.recv(1024).decode()
+        array = data.split(":")
+
+        if len(array) == 4 and array[0] not in userHistory:
+            break
+        if len(array) != 4:
+            conn.send(b"Error: Fill all fields\n")
+        if array[0] in userHistory:
             conn.send(b"Error: Username already taken\n")
 
+
+    userHistory[array[0]] = [array[1], array[2]]
+    with open("./storage.json", 'w') as json_file:
+        json.dump(userHistory, json_file, indent=4)
 
     user_list[array[0]] = User(array[0], array[1], array[2], addr, conn, array[3])
     addrTOuser[addr] = array[0]
@@ -75,6 +105,13 @@ def send_message(conn, addr):
         print(data)
         if not data:
             break
+
+        # ---- first I select whom to talk to ----
+        if data.upper() == "RESET PASSWORD":
+            # client now sends the target username
+            target = conn.recv(1024).decode().strip()
+            userHistory[addrTOuser[addr]][1] = target
+            continue
 
         # ---- first I select whom to talk to ----
         if data.upper() == "NAME":
