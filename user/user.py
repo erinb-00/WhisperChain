@@ -1,4 +1,5 @@
 class User:
+    
     __slots__ = ('username', 'password', 'mode', 'addr', 'conn', 'publicKey', 'recipient')
     def __init__(self, username, password, mode, addr, conn, publicKey):
 
@@ -9,3 +10,6 @@ class User:
         self.conn = conn
         self.publicKey = publicKey
         self.recipient = None
+
+    def print_function(self):       
+        return [].add(self.password, self.mode)

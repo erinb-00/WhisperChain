@@ -45,12 +45,3 @@ def add_cred(service, username, password, key):
     }
     with open("./storage.json","w") as f:
         json.dump(data, f, indent=4)
-
-# Usage
-if __name__ == "__main__":
-    key = create_key()
-    token1 = crypt_cred("mysecret", key)
-    token2 = crypt_cred("mysecret", key)
-    assert token1 == token2            # deterministic!
-    print("Encrypted:", token1)
-    print("Decrypted:", decrypt_cred(token1, key))
