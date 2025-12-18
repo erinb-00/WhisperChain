@@ -8,7 +8,7 @@ priv, pub = generate_ec_keypair() # Generate an EC keypair for the client
 pem = serialize_public_key(pub) # Serialize the public key to PEM format
 
 HOST, PORT = '127.0.0.1', 34567
-genai.configure(api_key="AIzaSyAPc_aG5yR8YGwEmFKTTa2PmRAw6h_SY0w") # API key for Gemini AI
+genai.configure(api_key="") # API key for Gemini AI
 
 def gemini_agent(message):
     model = genai.GenerativeModel("models/gemini-1.5-flash") # Load the Gemini AI model
